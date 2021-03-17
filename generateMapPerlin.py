@@ -248,19 +248,19 @@ outputImageHeight = int(input("Output image height?"))
 interVectorDistance = int(input("Inter vector distance?"))
 vectorSize = int(input("Vector size?"))
 
-#perlinMap1 = perlinMap(outputImageWidth,outputImageHeight,interVectorDistance,vectorSize)
-#perlinMap2 = perlinMap(outputImageWidth,outputImageHeight,math.floor(interVectorDistance/3),math.floor(vectorSize/3))
-#perlinMap2 = multiplyMap(outputImageWidth,outputImageHeight,perlinMap2,0.5)
-#fullMap = addMaps(outputImageWidth,outputImageHeight,perlinMap1,perlinMap2)
-
-#normalizedResults = normalizeMap(outputImageWidth,outputImageHeight,fullMap)
-
-valueNoise1 = valueNoiseMap(outputImageWidth,outputImageHeight,interVectorDistance)
-valueNoise2 = valueNoiseMap(outputImageWidth,outputImageHeight,math.floor(interVectorDistance/3))
-valueNoise2 = multiplyMap(outputImageWidth,outputImageHeight,valueNoise2,0.5)
-fullMap = addMaps(outputImageWidth,outputImageHeight,valueNoise1,valueNoise2)
+perlinMap1 = perlinMap(outputImageWidth,outputImageHeight,interVectorDistance,vectorSize)
+perlinMap2 = perlinMap(outputImageWidth,outputImageHeight,math.floor(interVectorDistance/3),math.floor(vectorSize/3))
+perlinMap2 = multiplyMap(outputImageWidth,outputImageHeight,perlinMap2,0.5)
+fullMap = addMaps(outputImageWidth,outputImageHeight,perlinMap1,perlinMap2)
 
 normalizedResults = normalizeMap(outputImageWidth,outputImageHeight,fullMap)
+
+#valueNoise1 = valueNoiseMap(outputImageWidth,outputImageHeight,interVectorDistance)
+#valueNoise2 = valueNoiseMap(outputImageWidth,outputImageHeight,math.floor(interVectorDistance/3))
+#valueNoise2 = multiplyMap(outputImageWidth,outputImageHeight,valueNoise2,0.5)
+#fullMap = addMaps(outputImageWidth,outputImageHeight,valueNoise1,valueNoise2)
+
+#normalizedResults = normalizeMap(outputImageWidth,outputImageHeight,fullMap)
 
 redColors = [ [ 0 for i in range(outputImageHeight) ] for j in range(outputImageWidth) ] 
 greenColors = [ [ 0 for i in range(outputImageHeight) ] for j in range(outputImageWidth) ] 
