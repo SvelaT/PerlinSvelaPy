@@ -11,6 +11,18 @@ def smooth(x):
     else:
         return 2*x*x
 
+def triangleWave(x,period):
+    value = x%period
+    peak = period/2
+
+    if(value > period/2):
+        return (-value+period)/peak
+    else:
+        return value/peak
+
+def remapValues(x,origMin,origMax,newMin,newMax):
+    return ((x-origMin)/(origMax-origMin))*(newMax-newMin)+newMin
+
 def genRandomVectors(numVectorsX,numVectorsY,vsize):
     vectorsX = [ [ 0 for i in range(numVectorsY) ] for j in range(numVectorsX) ] 
     vectorsY = [ [ 0 for i in range(numVectorsY) ] for j in range(numVectorsX) ] 
@@ -22,6 +34,15 @@ def genRandomVectors(numVectorsX,numVectorsY,vsize):
             vectorsY[i][j] = math.sin(randomAngle)*vsize
 
     return [vectorsX,vectorsY]
+
+def genRandomLatPoints(numPointsX,numPointsY):
+    latPoints = [ [ 0 for i in range(numPointsY) ] for j in range(numPointsX) ]
+
+    for i in range(numPointsX):
+        for j in range(numPointsY):
+            latPoints[i][j] = random.randint(1,1000)
+    
+    return latPoints
 
 def calculateDotProducts(width,height,ivd,vectorsX,vectorsY):
     dotProductsNW = [ [ 0 for i in range(height) ] for j in range(width) ] 
@@ -68,22 +89,44 @@ def calculateDotProducts(width,height,ivd,vectorsX,vectorsY):
 def interpolateDotProducts(width,height,ivd,dotProducts):
     interpolatedResults = [ [ 0 for i in range(height) ] for j in range(width) ] 
 
-    dotProductsNW = dotProducts[0]
-    dotProductsSW = dotProducts[1]
-    dotProductsNE = dotProducts[2]
-    dotProductsSE = dotProducts[3]
+    valueNW = dotProducts[0]
+    valueSW = dotProducts[1]
+    valueNE = dotProducts[2]
+    valueSE = dotProducts[3]
 
     for i in range(width):
         for j in range(height):
             xPercent = smooth((i%ivd)/ivd) #alto no E, baixo no W
             yPercent = smooth((j%ivd)/ivd) #alto no S, baixo no N
 
-            interNorth = (dotProductsSE[i][j]-dotProductsSW[i][j])*xPercent+dotProductsSW[i][j]
-            interSouth = (dotProductsNE[i][j]-dotProductsNW[i][j])*xPercent+dotProductsNW[i][j]
+            interNorth = (valueSE[i][j]-valueSW[i][j])*xPercent+valueSW[i][j]
+            interSouth = (valueNE[i][j]-valueNW[i][j])*xPercent+valueNW[i][j]
 
             interpolatedResults[i][j] = (interNorth-interSouth)*yPercent+interSouth
 
     return interpolatedResults
+
+def interpolateCorners(width,height,ivd,corners):
+    interpolatedResults = [ [ 0 for i in range(height) ] for j in range(width) ] 
+
+    for i in range(width):
+        for j in range(height):
+            xPercent = smooth((i%ivd)/ivd) #alto no E, baixo no W
+            yPercent = smooth((j%ivd)/ivd) #alto no S, baixo no N
+
+            cornerNW = corners[math.floor(i/ivd)][math.floor(j/ivd)]
+            cornerSW = corners[math.floor(i/ivd)][math.ceil(j/ivd)]
+            cornerNE = corners[math.ceil(i/ivd)][math.floor(j/ivd)]
+            cornerSE = corners[math.ceil(i/ivd)][math.ceil(j/ivd)]
+
+            interNorth = (cornerSE-cornerSW)*xPercent+cornerSW
+            interSouth = (cornerNE-cornerNW)*xPercent+cornerNW
+            
+            interpolatedResults[i][j] = (interNorth-interSouth)*yPercent+interSouth
+
+    return interpolatedResults
+
+
     
 def normalizeMap(width,height,interpolatedResults):
     maxValues = [0 for i in range(width)]
@@ -141,16 +184,81 @@ def perlinMap(width,height,ivd,vsize):
 
     return normalizedMap
 
+def valueNoiseMap(width,height,ivd):
+    numPointsX = math.ceil(width/ivd)+1
+    numPointsY = math.ceil(height/ivd)+1
+
+    latPoints = genRandomLatPoints(numPointsX,numPointsY)
+
+    interpolatedResults = interpolateCorners(width,height,ivd,latPoints)
+
+    normalizedMap = normalizeMap(width,height,interpolatedResults)
+
+    return normalizedMap
+
+def cosinesMap(width,height,freqX,freqY):
+    resultMap = [ [ 0 for i in range(height) ] for j in range(width) ] 
+
+    for i in range(width):
+        for j in range(height):
+            resultMap[i][j] = math.cos(freqX*i)+math.cos(freqY*j)
+        
+    return resultMap 
+
+def sawtoothMap(width,height,periodX,periodY):
+    resultMap = [ [ 0 for i in range(height) ] for j in range(width) ] 
+
+    for i in range(width):
+        for j in range(height):
+            resultMap[i][j] = i%periodX + j%periodY
+
+    return resultMap
+
+def triangleMap(width,height,periodX,periodY):
+    resultMap = [ [ 0 for i in range(height) ] for j in range(width) ] 
+
+    for i in range(width):
+        for j in range(height):
+            resultMap[i][j] = triangleWave(i,periodX)+triangleWave(j,periodY)
+
+    return resultMap
+
+def randomNoiseMap(width,height):
+    resultMap = [ [ 0 for i in range(height) ] for j in range(width) ] 
+
+    for i in range(width):
+        for j in range(height):
+            resultMap[i][j] = random.randint(1,10000)/10000
+
+    return resultMap
+
+def distanceMap(width,height,pointX,pointY):
+    resultMap = [ [ 0 for i in range(height) ] for j in range(width) ] 
+
+    for i in range(width):
+        for j in range(height):
+            resultMap[i][j] = math.sqrt((i-pointX)*(i-pointX) + (j-pointY)*(j-pointY))
+
+    return resultMap
+
+
 
 outputImageWidth = int(input("Output image width?"))
 outputImageHeight = int(input("Output image height?"))
 interVectorDistance = int(input("Inter vector distance?"))
 vectorSize = int(input("Vector size?"))
 
-perlinMap1 = perlinMap(outputImageWidth,outputImageHeight,interVectorDistance,vectorSize)
-perlinMap2 = perlinMap(outputImageWidth,outputImageHeight,math.floor(interVectorDistance/3),math.floor(vectorSize/3))
-perlinMap2 = multiplyMap(outputImageWidth,outputImageHeight,perlinMap2,0.5)
-fullMap = addMaps(outputImageWidth,outputImageHeight,perlinMap1,perlinMap2)
+#perlinMap1 = perlinMap(outputImageWidth,outputImageHeight,interVectorDistance,vectorSize)
+#perlinMap2 = perlinMap(outputImageWidth,outputImageHeight,math.floor(interVectorDistance/3),math.floor(vectorSize/3))
+#perlinMap2 = multiplyMap(outputImageWidth,outputImageHeight,perlinMap2,0.5)
+#fullMap = addMaps(outputImageWidth,outputImageHeight,perlinMap1,perlinMap2)
+
+#normalizedResults = normalizeMap(outputImageWidth,outputImageHeight,fullMap)
+
+valueNoise1 = valueNoiseMap(outputImageWidth,outputImageHeight,interVectorDistance)
+valueNoise2 = valueNoiseMap(outputImageWidth,outputImageHeight,math.floor(interVectorDistance/3))
+valueNoise2 = multiplyMap(outputImageWidth,outputImageHeight,valueNoise2,0.5)
+fullMap = addMaps(outputImageWidth,outputImageHeight,valueNoise1,valueNoise2)
 
 normalizedResults = normalizeMap(outputImageWidth,outputImageHeight,fullMap)
 
@@ -161,10 +269,18 @@ blueColors = [ [ 0 for i in range(outputImageHeight) ] for j in range(outputImag
 for i in range(outputImageWidth):
     for j in range(outputImageHeight):
         value = math.ceil(255*normalizedResults[i][j])
-        if(value < 126):
-            blueColors[i][j] = value
+        if(value < 50):
+            redColors[i][j] = remapValues(value,0,50,120,255)
+        elif(value < 100):
+            redColors[i][j] = remapValues(value,50,100,120,255)
+            greenColors[i][j] = remapValues(value,50,100,120,255)
+        elif(value < 150):
+            greenColors[i][j] = remapValues(value,100,150,120,255)
+        elif(value < 200):
+            greenColors[i][j] = remapValues(value,150,200,120,255)
+            blueColors[i][j] = remapValues(value,150,200,120,255)
         else:
-            greenColors[i][j] = value
+            blueColors[i][j] = remapValues(value,200,250,120,255)
 
 generatedMap = Image.new(mode = "RGB", size=(outputImageWidth,outputImageHeight))
 
@@ -172,7 +288,7 @@ pixels = generatedMap.load()
 
 for i in range(generatedMap.size[0]):
     for j in range(generatedMap.size[1]):
-        pixels[i,j] = (redColors[i][j],greenColors[i][j],blueColors[i][j])
+        pixels[i,j] = (math.floor(redColors[i][j]/2),math.floor(greenColors[i][j]/2),math.floor(blueColors[i][j]/2))
     
 generatedMap.save("generatedMap.png")
 
